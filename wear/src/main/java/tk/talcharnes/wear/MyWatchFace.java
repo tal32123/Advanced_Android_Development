@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tk.talcharnes.wear;
+package com.example.android.sunshine.app;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -39,6 +39,8 @@ import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+
+import tk.talcharnes.wear.R;
 
 /**
  * Digital watch face with seconds. In ambient mode, the seconds aren't displayed. On devices with
