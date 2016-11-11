@@ -36,8 +36,9 @@ dependencies {
     compile 'com.google.android.gms:play-services-gcm:9.8.0'
     compile 'com.google.android.gms:play-services-location:9.8.0'
     compile 'com.google.android.gms:play-services-places:9.8.0'
+    compile 'com.google.android.gms:play-services-wearable:9.8.0'
     compile 'com.google.android.gms:play-services:9.8.0'
     compile 'com.android.support:support-v4:25.0.0'
     wearApp project(':wear')
 }
-
+apply plugin: 'com.google.gms.google-services'
