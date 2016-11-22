@@ -462,7 +462,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
                 throw new IllegalArgumentException("Asset must be non-null");
             }
             ConnectionResult result =
-                    mGoogleApiClient.blockingConnect(1500, TimeUnit.MILLISECONDS);
+                    mGoogleApiClient.blockingConnect(500, TimeUnit.MILLISECONDS);
             if (!result.isSuccess()) {
                 return null;
             }
