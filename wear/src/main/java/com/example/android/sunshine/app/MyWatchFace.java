@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -29,12 +31,30 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.Wearable;
+
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -44,7 +64,10 @@ import java.util.concurrent.TimeUnit;
  * Digital watch face with seconds. In ambient mode, the seconds aren't displayed. On devices with
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
-public class MyWatchFace extends CanvasWatchFaceService {
+public class MyWatchFace extends CanvasWatchFaceService{
+
+    private static final String LOG_TAG = MyWatchFace.class.getSimpleName();
+
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
@@ -63,6 +86,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
     public Engine onCreateEngine() {
         return new Engine();
     }
+
+
+
 
     private static class EngineHandler extends Handler {
         private final WeakReference<MyWatchFace.Engine> mWeakReference;
@@ -84,13 +110,22 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine
+            implements  GoogleApiClient.ConnectionCallbacks,
+            GoogleApiClient.OnConnectionFailedListener,
+            DataApi.DataListener {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
+        Bitmap mIcon;
+        Paint mIconPaint;
         Paint mTextPaint;
+        Paint mHighTempPaint;
+        Paint mLowTempPaint;
         boolean mAmbient;
         Calendar mCalendar;
+        float highTempYOffset;
+        float lowTempYOffset;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -98,8 +133,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 invalidate();
             }
         };
+
+
         float mXOffset;
         float mYOffset;
+
+        String mLowTemp;
+        String mHighTemp;
+
+        GoogleApiClient mGoogleApiClient;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -126,7 +168,27 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
+            mHighTempPaint = new Paint();
+            mHighTempPaint.setColor(resources.getColor(R.color.digital_text));
+
+            mLowTempPaint = new Paint();
+            mLowTempPaint.setColor(resources.getColor(R.color.light_grey));
+
+
             mCalendar = Calendar.getInstance();
+
+            highTempYOffset = getResources().getDimension(R.dimen.digital_temp_high_offset);
+            lowTempYOffset = getResources().getDimension(R.dimen.digital_temp_low_offset);
+
+
+
+            mGoogleApiClient = new GoogleApiClient.Builder(MyWatchFace.this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(Wearable.API)
+                    .build();
+            mGoogleApiClient.connect();
+
         }
 
         @Override
@@ -142,6 +204,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             paint.setAntiAlias(true);
             return paint;
         }
+
 
         @Override
         public void onVisibilityChanged(boolean visible) {
@@ -190,8 +253,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
             float textSize = resources.getDimension(isRound
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
+            float tempTextSize = resources.getDimension(isRound
+                    ? R.dimen.digital_temp_text_size_round : R.dimen.digital_temp_text_size);
 
             mTextPaint.setTextSize(textSize);
+            mHighTempPaint.setTextSize(tempTextSize);
+            mLowTempPaint.setTextSize(tempTextSize);
         }
 
         @Override
@@ -264,6 +331,32 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR),
                     mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
+
+
+            float centerX = bounds.centerX();
+            float centerY = bounds.centerY();
+
+            if (mHighTemp != null && mLowTemp != null) {
+//                if (mIcon != null && !mLowBitAmbient){
+//                    canvas.drawBitmap(mIcon,
+//                            centerX - mIcon.getWidth() - mIcon.getWidth() / 4,
+//                            tempYOffset - mIcon.getHeight() / 2,
+//                            mIconPaint);}
+                //High temp
+                canvas.drawText(mHighTemp, centerX, highTempYOffset, mHighTempPaint);
+                //Low temp
+                float highTempSize = mHighTempPaint.measureText(mHighTemp);
+                float highTempRightMargin = getResources().getDimension(R.dimen.digital_x_offset_round);
+                canvas.drawText(mLowTemp,
+                        centerX,//+ highTempSize + highTempRightMargin,
+                        lowTempYOffset,
+                        mLowTempPaint);
+            }
+            else {
+                Log.d("mHighTemp = " + mHighTemp, "mLowTemp = " + mLowTemp);
+                float tempYOffset = getResources().getDimension(R.dimen.digital_y_offset);
+                canvas.drawText("No temperature data", 30, tempYOffset + 35, mHighTempPaint);
+            }
         }
 
         /**
@@ -297,5 +390,94 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
         }
+
+        @Override
+        public void onConnected(@Nullable Bundle bundle) {
+            Log.d(LOG_TAG, "Wearable connected");
+            Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
+
+
+
+
+            PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watchface-temp-update");
+            PutDataRequest request = putDataMapRequest.asPutDataRequest();
+            //Flags this DataItem for urgent transport
+            request.setUrgent();
+
+
+            Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                @Override
+                public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+                    if (!dataItemResult.getStatus().isSuccess()) {
+                        Log.d(LOG_TAG, "Failed to receive data");
+                    } else {
+                        Log.d(LOG_TAG, "Successfully requested data");
+                    }
+                }
+            });
+
+
+
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+            Log.d(LOG_TAG, "Wearable Connection Suspended");
+        }
+
+        @Override
+        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+            Log.d(LOG_TAG, "Connection failed");
+        }
+
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            Log.d(LOG_TAG, "Data Changed");
+
+            for (DataEvent event : dataEventBuffer) {
+                if (event.getType() == DataEvent.TYPE_CHANGED) {
+                    DataItem item = event.getDataItem();
+                    if (item.getUri().getPath().equals("/watchface-temp-update")) {
+                        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                        mHighTemp = dataMap.getString("high-temp");
+                        mLowTemp = dataMap.getString("low-temp");
+
+                        Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                        Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+
+//                        DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
+//                        Asset iconAsset = dataMapItem.getDataMap().getAsset("icon");
+//                        mIcon = loadBitmapFromAsset(iconAsset);
+                        invalidate();
+                    }
+                }
+            }
+        }
+
+
+
+
+        public Bitmap loadBitmapFromAsset(Asset asset) {
+            if (asset == null) {
+                throw new IllegalArgumentException("Asset must be non-null");
+            }
+            ConnectionResult result =
+                    mGoogleApiClient.blockingConnect(1500, TimeUnit.MILLISECONDS);
+            if (!result.isSuccess()) {
+                return null;
+            }
+            // convert asset into a file descriptor and block until it's ready
+            InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
+                    mGoogleApiClient, asset).await().getInputStream();
+//            mGoogleApiClient.disconnect();
+
+            if (assetInputStream == null) {
+                Log.w(LOG_TAG, "Requested an unknown Asset.");
+                return null;
+            }
+            // decode the stream into a bitmap
+            return BitmapFactory.decodeStream(assetInputStream);
+        }
     }
+
 }

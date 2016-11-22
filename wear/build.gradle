@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.0"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.2"
 
     defaultConfig {
         applicationId "com.example.android.sunshine.app"
         minSdkVersion 21
-        targetSdkVersion 25
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
@@ -25,4 +25,7 @@ dependencies {
     compile 'com.google.android.support:wearable:2.0.0-alpha3'
     compile 'com.google.android.gms:play-services-wearable:9.8.0'
     compile 'com.google.android.gms:play-services:9.8.0'
+
+
+
 }
