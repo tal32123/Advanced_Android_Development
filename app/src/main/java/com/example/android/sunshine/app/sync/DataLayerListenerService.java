@@ -16,7 +16,6 @@ import com.google.android.gms.wearable.WearableListenerService;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.android.gms.internal.zzs.TAG;
 
 /**
  * Created by Tal on 11/24/2016.
@@ -88,7 +87,7 @@ public class DataLayerListenerService extends WearableListenerService {
                 googleApiClient.blockingConnect(30, TimeUnit.SECONDS);
 
         if (!connectionResult.isSuccess()) {
-            Log.e(TAG, "Failed to connect to GoogleApiClient.");
+            Log.e(LOG_TAG, "Failed to connect to GoogleApiClient.");
             return;
         }
 
