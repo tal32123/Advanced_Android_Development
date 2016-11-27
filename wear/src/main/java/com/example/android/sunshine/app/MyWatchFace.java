@@ -22,7 +22,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -38,23 +37,20 @@ import android.support.wearable.watchface.WatchFaceStyle;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
-import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
-import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -110,10 +106,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine
-            implements  GoogleApiClient.ConnectionCallbacks,
-            GoogleApiClient.OnConnectionFailedListener,
-            DataApi.DataListener {
+    private class Engine extends CanvasWatchFaceService.Engine {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
@@ -140,9 +133,33 @@ public class MyWatchFace extends CanvasWatchFaceService{
 
         String mLowTemp;
         String mHighTemp;
+        Long mTime;
+        private boolean mResolvingError;
 
         GoogleApiClient mGoogleApiClient;
 
+        DataApi.DataListener dataListener = new DataApi.DataListener() {
+            @Override
+            public void onDataChanged(DataEventBuffer dataEventBuffer) {
+                Log.d(LOG_TAG, "Data Changed");
+
+                for (DataEvent event : dataEventBuffer) {
+                    if (event.getType() == DataEvent.TYPE_CHANGED) {
+                        DataItem item = event.getDataItem();
+                        if (item.getUri().getPath().equals("/watchface-temp-update")) {
+                            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                            mHighTemp = dataMap.getString("high-temp");
+                            mLowTemp = dataMap.getString("low-temp");
+                            mTime = dataMap.getLong("time");
+
+                            Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                            Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            invalidate();
+                        }
+                    }
+                }
+            }
+        };
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
          * disable anti-aliasing in ambient mode.
@@ -180,14 +197,32 @@ public class MyWatchFace extends CanvasWatchFaceService{
             highTempYOffset = getResources().getDimension(R.dimen.digital_temp_high_offset);
             lowTempYOffset = getResources().getDimension(R.dimen.digital_temp_low_offset);
 
+            mResolvingError = false;
 
-
-            mGoogleApiClient = new GoogleApiClient.Builder(MyWatchFace.this)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
+            mGoogleApiClient = new GoogleApiClient.Builder(getApplicationContext())
                     .addApi(Wearable.API)
+                    .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                        @Override
+                        public void onConnected(@Nullable Bundle bundle) {
+                            Log.d(LOG_TAG, "Wearable connected");
+                            Wearable.DataApi.addListener(mGoogleApiClient, dataListener);
+                        sendMessage("/path/message", "connected to watchface");
+                        }
+
+                        @Override
+                        public void onConnectionSuspended(int i) {
+                            Log.d(LOG_TAG, "Wearable Connection Suspended");
+                        }
+                    })
+                    .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                        @Override
+                        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+                            Log.d(LOG_TAG, "Connection failed");
+                        }
+                    })
                     .build();
             mGoogleApiClient.connect();
+
 
         }
 
@@ -305,8 +340,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
                 case TAP_TYPE_TAP:
                     // The user has completed the tap gesture.
                     // TODO: Add code to handle the tap gesture.
-                    Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT)
-                            .show();
+
                     break;
             }
             invalidate();
@@ -390,94 +424,22 @@ public class MyWatchFace extends CanvasWatchFaceService{
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
         }
-
-        @Override
-        public void onConnected(@Nullable Bundle bundle) {
-            Log.d(LOG_TAG, "Wearable connected");
-            Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
-
-
-
-
-            PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watchface-temp-update");
-            PutDataRequest request = putDataMapRequest.asPutDataRequest();
-            //Flags this DataItem for urgent transport
-            request.setUrgent();
-
-
-            Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+        private void sendMessage( final String path, final String text ) {
+            new Thread( new Runnable() {
                 @Override
-                public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
-                    if (!dataItemResult.getStatus().isSuccess()) {
-                        Log.d(LOG_TAG, "Failed to receive data");
-                    } else {
-                        Log.d(LOG_TAG, "Successfully requested data");
+                public void run() {
+                    NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mGoogleApiClient ).await();
+                    for(Node node : nodes.getNodes()) {
+                        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
+                                mGoogleApiClient, node.getId(), path, text.getBytes() ).await();
                     }
                 }
-            });
-
-
-
-        }
-
-        @Override
-        public void onConnectionSuspended(int i) {
-            Log.d(LOG_TAG, "Wearable Connection Suspended");
-        }
-
-        @Override
-        public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-            Log.d(LOG_TAG, "Connection failed");
-        }
-
-        @Override
-        public void onDataChanged(DataEventBuffer dataEventBuffer) {
-            Log.d(LOG_TAG, "Data Changed");
-
-            for (DataEvent event : dataEventBuffer) {
-                if (event.getType() == DataEvent.TYPE_CHANGED) {
-                    DataItem item = event.getDataItem();
-                    if (item.getUri().getPath().equals("/watchface-temp-update")) {
-                        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                        mHighTemp = dataMap.getString("high-temp");
-                        mLowTemp = dataMap.getString("low-temp");
-
-                        Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
-                        Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
-
-//                        DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
-//                        Asset iconAsset = dataMapItem.getDataMap().getAsset("icon");
-//                        mIcon = loadBitmapFromAsset(iconAsset);
-                        invalidate();
-                    }
-                }
-            }
+            }).start();
         }
 
 
-
-
-        public Bitmap loadBitmapFromAsset(Asset asset) {
-            if (asset == null) {
-                throw new IllegalArgumentException("Asset must be non-null");
-            }
-            ConnectionResult result =
-                    mGoogleApiClient.blockingConnect(500, TimeUnit.MILLISECONDS);
-            if (!result.isSuccess()) {
-                return null;
-            }
-            // convert asset into a file descriptor and block until it's ready
-            InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
-                    mGoogleApiClient, asset).await().getInputStream();
-//            mGoogleApiClient.disconnect();
-
-            if (assetInputStream == null) {
-                Log.w(LOG_TAG, "Requested an unknown Asset.");
-                return null;
-            }
-            // decode the stream into a bitmap
-            return BitmapFactory.decodeStream(assetInputStream);
-        }
     }
 
+
 }
+

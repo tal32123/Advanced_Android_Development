@@ -33,11 +33,11 @@ dependencies {
     compile 'com.android.support:design:23.1.1'
     compile 'com.android.support:recyclerview-v7:24.2.1'
     compile 'com.google.android.apps.muzei:muzei-api:2.0'
-    compile 'com.google.android.gms:play-services-gcm:9.8.0'
-    compile 'com.google.android.gms:play-services-location:9.8.0'
-    compile 'com.google.android.gms:play-services-places:9.8.0'
-    compile 'com.google.android.gms:play-services-wearable:9.8.0'
-    compile 'com.google.android.gms:play-services:9.8.0'
+    compile 'com.google.android.gms:play-services-gcm:10.0.0'
+    compile 'com.google.android.gms:play-services-location:10.0.0'
+    compile 'com.google.android.gms:play-services-places:10.0.0'
+    compile 'com.google.android.gms:play-services-wearable:10.0.0'
+    compile 'com.google.android.gms:play-services:10.0.0'
     compile 'com.android.support:support-v4:24.2.1'
 
 

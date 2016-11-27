@@ -108,6 +108,7 @@
                 android:resource="@xml/syncadapter" />
         </service>
 
+
         <!-- The Google Cloud Messaging receiver and services -->
         <receiver
             android:name="com.google.android.gms.gcm.GcmReceiver"
@@ -183,6 +184,18 @@
                 <action android:name="com.google.android.gms.iid.InstanceID" />
             </intent-filter>
         </service>
+
+        <service android:name=".sync.DataLayerListenerService">
+            <intent-filter>
+                <!-- listener receives events that match the action and data filters -->
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.CAPABILITY_CHANGED" />
+                <action android:name="com.google.android.gms.wearable.CHANNEL_EVENT" />
+                <data android:scheme="wear" android:host="*" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".gcm.RegistrationIntentService"
             android:exported="false"></service>

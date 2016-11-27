@@ -65,8 +65,8 @@ import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
 public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
-        implements GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener
+        {
     public final String LOG_TAG = SunshineSyncAdapter.class.getSimpleName();
     public static final String ACTION_DATA_UPDATED =
             "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
@@ -99,22 +99,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         return Asset.createFromBytes(byteStream.toByteArray());
     }
 
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-        Log.d(LOG_TAG, "Google API Client was connected");
 
 
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-        Log.d(LOG_TAG, "Connection to Google API client was suspended");
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.d(LOG_TAG, "connection to Google API client has failed");
-    }
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({LOCATION_STATUS_OK, LOCATION_STATUS_SERVER_DOWN, LOCATION_STATUS_SERVER_INVALID,  LOCATION_STATUS_UNKNOWN, LOCATION_STATUS_INVALID})
@@ -126,8 +112,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
     public static final int LOCATION_STATUS_UNKNOWN = 3;
     public static final int LOCATION_STATUS_INVALID = 4;
 
-
     GoogleApiClient mGoogleApiClient;
+
 
 
 
@@ -135,9 +121,10 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
     public SunshineSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
 
-        mGoogleApiClient = new GoogleApiClient.Builder(context)
-                .addApi(Wearable.API)
 
+
+        mGoogleApiClient = new GoogleApiClient.Builder(getContext())
+                .addApi(Wearable.API)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
@@ -145,7 +132,69 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 
     }
 
+            @Override
+            public void onConnected(@Nullable Bundle bundle) {
+                Log.d(LOG_TAG, "Google API Client was connected");
+//                SunshineSyncAdapter.syncImmediately(getContext());
+//                sendDataToWatch();
 
+            }
+
+
+
+            private void sendDataToWatch(){
+                Log.d(LOG_TAG, "called sendDataToWatch");
+                String locationQuery = Utility.getPreferredLocation(getContext());
+                Uri weatherUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationQuery, System.currentTimeMillis());
+                Cursor cursor = getContext().getContentResolver().query(weatherUri, NOTIFY_WEATHER_PROJECTION, null, null, null);
+                if (cursor == null || !cursor.moveToFirst())
+                    return;
+
+                int weatherId = cursor.getInt(INDEX_WEATHER_ID);
+                String high = Utility.formatTemperature(getContext(), cursor.getDouble(INDEX_MAX_TEMP));
+                String low = Utility.formatTemperature(getContext(), cursor.getDouble(INDEX_MIN_TEMP));
+
+                Log.d(LOG_TAG, "high + low" + high + " " + low );
+
+
+
+//todo add weather icon
+//                    Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), iconId);
+
+                PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watchface-temp-update");
+                putDataMapRequest.getDataMap().putString("high-temp", high);
+                putDataMapRequest.getDataMap().putString("low-temp", low);
+//                    putDataMapRequestRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
+                putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
+
+                PutDataRequest request = putDataMapRequest.asPutDataRequest().setUrgent();
+
+                Log.d(LOG_TAG, "Attempt to send request with high = " + high + "and low = " + low);
+                Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {
+                    @Override
+                    public void onSuccess(DataApi.DataItemResult dataItemResult) {
+                        Log.d(LOG_TAG, "DataItem sent successfully");
+                        mGoogleApiClient.disconnect();
+                    }
+
+                    @Override
+                    public void onFailure(Status status) {
+                        Log.d(LOG_TAG, "DataItem Failed to send");
+                        mGoogleApiClient.disconnect();
+                    }
+                });
+            }
+
+
+            @Override
+            public void onConnectionSuspended(int i) {
+                Log.d(LOG_TAG, "Connection to Google API client was suspended");
+            }
+
+            @Override
+            public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+                Log.d(LOG_TAG, "connection to Google API client has failed");
+            }
 
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
@@ -409,13 +458,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 
                 cVVector.add(weatherValues);
 
-
-
-                if(i == 0){
-                    //Send today's data to wearable
-
-                    sendDataToWatch(high, low);
-                }
             }
 
             int inserted = 0;
@@ -433,6 +475,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                 updateWidgets();
                 updateMuzei();
                 notifyWeather();
+                sendDataToWatch();
+
             }
             Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
             setLocationStatus(getContext(), LOCATION_STATUS_OK);
@@ -496,7 +540,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                     int artResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
                     String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
 
-                    sendDataToWatch(high, low);
 
                                         // On Honeycomb and higher devices, we can retrieve the size of the large icon
                     // Prior to that, we use a fixed size
@@ -561,6 +604,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                             (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
                     // WEATHER_NOTIFICATION_ID allows you to update the notification later on.
                     mNotificationManager.notify(WEATHER_NOTIFICATION_ID, mBuilder.build());
+
 
                     //refreshing last sync
                     SharedPreferences.Editor editor = prefs.edit();
@@ -725,33 +769,4 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         spe.commit();
     }
 
-public void sendDataToWatch(Double high, Double low){
-    Log.d(LOG_TAG, "high + low" + high + " " + low );
-
-//                    Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), iconId);
-
-    PutDataMapRequest putDataMapRequestRequest = PutDataMapRequest.create("/watchface-temp-update");
-    putDataMapRequestRequest.getDataMap().putString("high-temp", Utility.formatTemperature(getContext(), high));
-    putDataMapRequestRequest.getDataMap().putString("low-temp", Utility.formatTemperature(getContext(), low));
-//                    putDataMapRequestRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
-
-
-    PutDataRequest request = putDataMapRequestRequest.asPutDataRequest();
-    request.setUrgent();
-    Log.d(LOG_TAG, "Attempt to send request with high = " + high + "and low = " + low);
-    Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {
-        @Override
-        public void onSuccess(DataApi.DataItemResult dataItemResult) {
-            Log.d(LOG_TAG, "DataItem sent successfully");
-        }
-
-        @Override
-        public void onFailure(Status status) {
-            Log.d(LOG_TAG, "DataItem Failed to send");
-        }
-    });
-
-
-
-}
 }
