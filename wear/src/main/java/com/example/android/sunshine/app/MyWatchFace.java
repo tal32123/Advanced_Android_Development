@@ -40,6 +40,7 @@ import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
@@ -49,6 +50,8 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
@@ -198,7 +201,6 @@ public class MyWatchFace extends CanvasWatchFaceService{
             lowTempYOffset = getResources().getDimension(R.dimen.digital_temp_low_offset);
 
             mResolvingError = false;
-
             mGoogleApiClient = new GoogleApiClient.Builder(getApplicationContext())
                     .addApi(Wearable.API)
                     .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
@@ -206,7 +208,10 @@ public class MyWatchFace extends CanvasWatchFaceService{
                         public void onConnected(@Nullable Bundle bundle) {
                             Log.d(LOG_TAG, "Wearable connected");
                             Wearable.DataApi.addListener(mGoogleApiClient, dataListener);
-                        sendMessage("/path/message", "connected to watchface");
+                            sendMessage("/path/update", "connected to watchface");
+
+
+                            syncImmediately();
                         }
 
                         @Override
@@ -438,6 +443,25 @@ public class MyWatchFace extends CanvasWatchFaceService{
         }
 
 
+
+        public void
+        syncImmediately() {
+            PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/path/update");
+            PutDataRequest request = putDataMapRequest.asPutDataRequest();
+            request.setUrgent();
+
+
+            Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                @Override
+                public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+                    if (!dataItemResult.getStatus().isSuccess()) {
+                        Log.d(LOG_TAG, "Failed to sync immediately");
+                    } else {
+                        Log.d(LOG_TAG, "Successfully synced immediately");
+                    }
+                }
+            });
+        }
     }
 
 

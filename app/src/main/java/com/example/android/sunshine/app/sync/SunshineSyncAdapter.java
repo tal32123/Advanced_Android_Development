@@ -167,7 +167,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 //                    putDataMapRequestRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
                 putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
 
-                PutDataRequest request = putDataMapRequest.asPutDataRequest().setUrgent();
+                PutDataRequest request = putDataMapRequest.asPutDataRequest();
+                request.setUrgent();
 
                 Log.d(LOG_TAG, "Attempt to send request with high = " + high + "and low = " + low);
                 Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DataLayerListenerService extends WearableListenerService {
 
-    private static final String LOG_TAG = DataLayerListenerService.class.getSimpleName();
+    private static final String LOG_TAG = "DataListener";
     private static final String START_ACTIVITY_PATH = "/start-activity";
     private static final String DATA_ITEM_RECEIVED_PATH = "/data-item-received";
     GoogleApiClient mGoogleApiClient;
@@ -44,8 +44,7 @@ public class DataLayerListenerService extends WearableListenerService {
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
-        super.onMessageReceived(messageEvent);
-        if(messageEvent.getPath().equals("/path/message")){
+        if(messageEvent.getPath().equals("/path/update")){
             Log.d(LOG_TAG, "Message received. Syncing now.");
             Log.d(LOG_TAG, messageEvent.getData().toString());
             SunshineSyncAdapter.syncImmediately(this);
@@ -108,7 +107,7 @@ public class DataLayerListenerService extends WearableListenerService {
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 String path = event.getDataItem().getUri().getPath();
                 Log.d(LOG_TAG, path);
-                if (path.equals("/watchface-temp-update")) {
+                if (path.equals("/path/update")) {
                     SunshineSyncAdapter.syncImmediately(this);
                 }
             }
