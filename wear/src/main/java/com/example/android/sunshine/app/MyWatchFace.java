@@ -135,8 +135,10 @@ public class MyWatchFace extends CanvasWatchFaceService{
         float mYOffset;
 
         String mLowTemp;
-        String mHighTemp;
+       String mHighTemp;
         Long mTime;
+        String makeWeatherUnique;
+
         private boolean mResolvingError;
 
         GoogleApiClient mGoogleApiClient;
@@ -145,20 +147,69 @@ public class MyWatchFace extends CanvasWatchFaceService{
             @Override
             public void onDataChanged(DataEventBuffer dataEventBuffer) {
                 Log.d(LOG_TAG, "Data Changed");
+//                this number is removed from the weather data. In the following methods. It was added in order to make data
+//                unique so that it is sent by Wearable Api
 
                 for (DataEvent event : dataEventBuffer) {
                     if (event.getType() == DataEvent.TYPE_CHANGED) {
                         DataItem item = event.getDataItem();
+                        Log.d(LOG_TAG, "onDataChanged path = " + item.getUri().getPath());
                         if (item.getUri().getPath().equals("/watchface-temp-update")) {
+
                             DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                            mHighTemp = dataMap.getString("high-temp");
-                            mLowTemp = dataMap.getString("low-temp");
-                            mTime = dataMap.getLong("time");
+                            if(dataMap.containsKey("makeWeatherUnique")) {
+                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
+                                makeWeatherUnique = dataMap.getInt("makeWeatherUnique") + "";
+                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
+                            }
+
+                            if(dataMap.containsKey("high-temp")) {
+                                mHighTemp = dataMap.getString("high-temp");
+                                mHighTemp = mHighTemp.replace((makeWeatherUnique),"");
+                                Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                            }
+                            if(dataMap.containsKey("low-temp")) {
+                                mLowTemp = dataMap.getString("low-temp");
+                                mLowTemp = mLowTemp.replace((makeWeatherUnique),"");
+                                Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            }
+                            if (dataMap.containsKey("time")) {
+                                mTime = dataMap.getLong("time");
+                            }
 
                             Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
                             Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
                             invalidate();
                         }
+                        if (item.getUri().getPath().equals("/path/update")) {
+                            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                            if(dataMap.containsKey("makeWeatherUnique")) {
+                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
+                                makeWeatherUnique = dataMap.getInt("makeWeatherUnique") + "";
+                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
+                            }
+
+                            if(dataMap.containsKey("high-temp")) {
+                                mHighTemp = dataMap.getString("high-temp");
+                                mHighTemp = mHighTemp.replace((makeWeatherUnique),"");
+                                Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                            }
+                            if(dataMap.containsKey("low-temp")) {
+                                mLowTemp = dataMap.getString("low-temp");
+                                mLowTemp = mLowTemp.replace((makeWeatherUnique),"");
+                                Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            }
+                            if (dataMap.containsKey("time")) {
+                                mTime = dataMap.getLong("time");
+                            }
+
+                            Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                            Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
+                            invalidate();
+                        }
+
                     }
                 }
             }
@@ -392,7 +443,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
                         mLowTempPaint);
             }
             else {
-                Log.d("mHighTemp = " + mHighTemp, "mLowTemp = " + mLowTemp);
+                Log.d("mHighTemp = " + mHighTemp, "mLowTemp = " + mLowTemp + " time = " + mTime + " makeWeatherUnique " + makeWeatherUnique);
                 float tempYOffset = getResources().getDimension(R.dimen.digital_y_offset);
                 canvas.drawText("No temperature data", 30, tempYOffset + 35, mHighTempPaint);
             }
@@ -447,6 +498,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
         public void
         syncImmediately() {
             PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/path/update");
+            putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
             PutDataRequest request = putDataMapRequest.asPutDataRequest();
             request.setUrgent();
 

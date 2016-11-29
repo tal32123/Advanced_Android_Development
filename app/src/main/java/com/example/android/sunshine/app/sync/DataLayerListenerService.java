@@ -45,8 +45,7 @@ public class DataLayerListenerService extends WearableListenerService {
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         if(messageEvent.getPath().equals("/path/update")){
-            Log.d(LOG_TAG, "Message received. Syncing now.");
-            Log.d(LOG_TAG, messageEvent.getData().toString());
+            Log.d(LOG_TAG, "Message received. Syncing now." +  messageEvent.getData().toString());
             SunshineSyncAdapter.syncImmediately(this);
         }
     }
@@ -106,7 +105,7 @@ public class DataLayerListenerService extends WearableListenerService {
 
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 String path = event.getDataItem().getUri().getPath();
-                Log.d(LOG_TAG, path);
+                Log.d(LOG_TAG, "path = " + path);
                 if (path.equals("/path/update")) {
                     SunshineSyncAdapter.syncImmediately(this);
                 }

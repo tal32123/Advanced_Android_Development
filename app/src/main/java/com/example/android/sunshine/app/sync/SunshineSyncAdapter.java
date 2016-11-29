@@ -61,6 +61,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
@@ -150,9 +151,16 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                 if (cursor == null || !cursor.moveToFirst())
                     return;
 
+
                 int weatherId = cursor.getInt(INDEX_WEATHER_ID);
                 String high = Utility.formatTemperature(getContext(), cursor.getDouble(INDEX_MAX_TEMP));
                 String low = Utility.formatTemperature(getContext(), cursor.getDouble(INDEX_MIN_TEMP));
+
+//              makeWeatherUnique is added to the weather data in order to get unique values each time it is called.
+//              This value is subtracted in the myWatchFace class
+                Random random = new Random();
+                int  makeWeatherUnique = random.nextInt(1000) + 1;
+
 
                 Log.d(LOG_TAG, "high + low" + high + " " + low );
 
@@ -161,16 +169,21 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 //todo add weather icon
 //                    Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), iconId);
 
+            String highTemp = high + makeWeatherUnique;
+            String lowTemp = low + makeWeatherUnique;
                 PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watchface-temp-update");
-                putDataMapRequest.getDataMap().putString("high-temp", high);
-                putDataMapRequest.getDataMap().putString("low-temp", low);
+                putDataMapRequest.getDataMap().putInt("makeWeatherUnique", makeWeatherUnique);
+
+                putDataMapRequest.getDataMap().putString("high-temp", highTemp);
+                putDataMapRequest.getDataMap().putString("low-temp", lowTemp);
 //                    putDataMapRequestRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
+
                 putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
 
                 PutDataRequest request = putDataMapRequest.asPutDataRequest();
                 request.setUrgent();
 
-                Log.d(LOG_TAG, "Attempt to send request with high = " + high + "and low = " + low);
+                Log.d(LOG_TAG, "Attempt to send request with high = " + highTemp + " and low = " + lowTemp + " makeWeatherUnique = " + makeWeatherUnique );
                 Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {
                     @Override
                     public void onSuccess(DataApi.DataItemResult dataItemResult) {
