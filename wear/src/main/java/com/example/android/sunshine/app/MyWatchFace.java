@@ -182,33 +182,6 @@ public class MyWatchFace extends CanvasWatchFaceService{
                             Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
                             invalidate();
                         }
-                        if (item.getUri().getPath().equals("/path/update")) {
-                            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                            if(dataMap.containsKey("makeWeatherUnique")) {
-                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
-                                makeWeatherUnique = dataMap.getInt("makeWeatherUnique") + "";
-                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
-                            }
-
-                            if(dataMap.containsKey("high-temp")) {
-                                mHighTemp = dataMap.getString("high-temp");
-                                mHighTemp = mHighTemp.replace((makeWeatherUnique),"");
-                                Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
-                            }
-                            if(dataMap.containsKey("low-temp")) {
-                                mLowTemp = dataMap.getString("low-temp");
-                                mLowTemp = mLowTemp.replace((makeWeatherUnique),"");
-                                Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
-                            }
-                            if (dataMap.containsKey("time")) {
-                                mTime = dataMap.getLong("time");
-                            }
-
-                            Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
-                            Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
-                            Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
-                            invalidate();
-                        }
 
                     }
                 }
