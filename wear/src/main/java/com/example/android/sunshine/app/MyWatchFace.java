@@ -135,7 +135,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
         float mYOffset;
 
         String mLowTemp;
-       String mHighTemp;
+        String mHighTemp;
         Long mTime;
         String makeWeatherUnique;
 
@@ -164,9 +164,44 @@ public class MyWatchFace extends CanvasWatchFaceService{
                             }
 
                             if(dataMap.containsKey("high-temp")) {
-                                mHighTemp = dataMap.getString("high-temp");
-                                mHighTemp = mHighTemp.replace((makeWeatherUnique),"");
-                                Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                                String tempTemp = dataMap.getString("high-temp");
+                                Log.d(LOG_TAG, "tempTemp 1 = " + tempTemp);
+                                if (tempTemp != null) {
+                                    mHighTemp = tempTemp;
+                                    mHighTemp = mHighTemp.replace((makeWeatherUnique), "");
+                                    Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                                }
+                            }
+                            if(dataMap.containsKey("low-temp")) {
+                                mLowTemp = dataMap.getString("low-temp");
+                                mLowTemp = mLowTemp.replace((makeWeatherUnique),"");
+                                Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            }
+                            if (dataMap.containsKey("time")) {
+                                mTime = dataMap.getLong("time");
+                            }
+
+                            Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                            Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
+                            Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
+                            invalidate();
+                        }
+                        if (item.getUri().getPath().equals("/path/update")) {
+                            DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                            if(dataMap.containsKey("makeWeatherUnique")) {
+                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
+                                makeWeatherUnique = dataMap.getInt("makeWeatherUnique") + "";
+                                Log.d(LOG_TAG, "makeWeatherUnique = " + makeWeatherUnique);
+                            }
+
+                            if(dataMap.containsKey("high-temp")) {
+                                String tempTemp = dataMap.getString("high-temp");
+                                Log.d(LOG_TAG, "tempTemp 2 = " + tempTemp);
+                                if (tempTemp != null) {
+                                    mHighTemp = tempTemp;
+                                    mHighTemp = mHighTemp.replace((makeWeatherUnique), "");
+                                    Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
+                                }
                             }
                             if(dataMap.containsKey("low-temp")) {
                                 mLowTemp = dataMap.getString("low-temp");
@@ -408,8 +443,8 @@ public class MyWatchFace extends CanvasWatchFaceService{
                 //High temp
                 canvas.drawText(mHighTemp, centerX, highTempYOffset, mHighTempPaint);
                 //Low temp
-                float highTempSize = mHighTempPaint.measureText(mHighTemp);
-                float highTempRightMargin = getResources().getDimension(R.dimen.digital_x_offset_round);
+//                float highTempSize = mHighTempPaint.measureText(mHighTemp);
+//                float highTempRightMargin = getResources().getDimension(R.dimen.digital_x_offset_round);
                 canvas.drawText(mLowTemp,
                         centerX,//+ highTempSize + highTempRightMargin,
                         lowTempYOffset,
@@ -491,4 +526,3 @@ public class MyWatchFace extends CanvasWatchFaceService{
 
 
 }
-
