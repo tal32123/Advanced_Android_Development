@@ -461,10 +461,11 @@ public class MyWatchFace extends CanvasWatchFaceService{
                             lowTempYOffset - mIcon.getHeight(),
                             mIconPaint);}
                 //High temp
-                canvas.drawText(mHighTemp, centerX + 25, highTempYOffset, mHighTempPaint);
+                canvas.drawText(mHighTemp,
+                        centerX + 25,
+                        highTempYOffset,
+                        mHighTempPaint);
                 //Low temp
-//                float highTempSize = mHighTempPaint.measureText(mHighTemp);
-//                float highTempRightMargin = getResources().getDimension(R.dimen.digital_x_offset_round);
                 canvas.drawText(mLowTemp,
                         centerX + 25,//+ highTempSize + highTempRightMargin,
                         lowTempYOffset,

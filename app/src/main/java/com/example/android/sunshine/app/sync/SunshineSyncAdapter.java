@@ -168,7 +168,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), Utility.getArtResourceForWeatherCondition(weatherId));
 
 
-//todo add weather icon
 
         String highTemp = high + makeWeatherUnique;
         String lowTemp = low + makeWeatherUnique;
