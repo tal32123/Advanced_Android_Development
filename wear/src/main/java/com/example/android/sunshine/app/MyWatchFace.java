@@ -22,11 +22,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -41,6 +43,7 @@ import android.view.WindowInsets;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
@@ -54,6 +57,7 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -181,6 +185,14 @@ public class MyWatchFace extends CanvasWatchFaceService{
                                 mTime = dataMap.getLong("time");
                             }
 
+                            if (dataMap.containsKey("icon")){
+                                Asset iconAsset = dataMap.getAsset("icon");
+                                if (iconAsset != null) {
+                                    new GetBitmap().execute(iconAsset);
+
+                                }
+                            }
+
                             Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
                             Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
                             Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
@@ -211,7 +223,13 @@ public class MyWatchFace extends CanvasWatchFaceService{
                             if (dataMap.containsKey("time")) {
                                 mTime = dataMap.getLong("time");
                             }
+                            if (dataMap.containsKey("icon")){
+                                Asset iconAsset = dataMap.getAsset("icon");
+                                if (iconAsset != null) {
+                                    new GetBitmap().execute(iconAsset);
 
+                                }
+                            }
                             Log.d(LOG_TAG, "mHighTemp = " + mHighTemp);
                             Log.d(LOG_TAG, "mLowTemp = " + mLowTemp);
                             Log.d(LOG_TAG, "makeWeatherUnique " + makeWeatherUnique);
@@ -219,9 +237,11 @@ public class MyWatchFace extends CanvasWatchFaceService{
                         }
 
                     }
+
                 }
             }
         };
+
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
          * disable anti-aliasing in ambient mode.
@@ -435,18 +455,18 @@ public class MyWatchFace extends CanvasWatchFaceService{
             float centerY = bounds.centerY();
 
             if (mHighTemp != null && mLowTemp != null) {
-//                if (mIcon != null && !mLowBitAmbient){
-//                    canvas.drawBitmap(mIcon,
-//                            centerX - mIcon.getWidth() - mIcon.getWidth() / 4,
-//                            tempYOffset - mIcon.getHeight() / 2,
-//                            mIconPaint);}
+                if (mIcon != null){// && !mLowBitAmbient){
+                    canvas.drawBitmap(mIcon,
+                           centerX - 100 ,// centerX - mIcon.getWidth() - mIcon.getWidth() / 4,
+                            lowTempYOffset - mIcon.getHeight(),
+                            mIconPaint);}
                 //High temp
-                canvas.drawText(mHighTemp, centerX, highTempYOffset, mHighTempPaint);
+                canvas.drawText(mHighTemp, centerX + 25, highTempYOffset, mHighTempPaint);
                 //Low temp
 //                float highTempSize = mHighTempPaint.measureText(mHighTemp);
 //                float highTempRightMargin = getResources().getDimension(R.dimen.digital_x_offset_round);
                 canvas.drawText(mLowTemp,
-                        centerX,//+ highTempSize + highTempRightMargin,
+                        centerX + 25,//+ highTempSize + highTempRightMargin,
                         lowTempYOffset,
                         mLowTempPaint);
             }
@@ -522,7 +542,40 @@ public class MyWatchFace extends CanvasWatchFaceService{
                 }
             });
         }
+
+        public Bitmap loadBitmapFromAsset(Asset asset) {
+            final int TIMEOUT_MS = 500;
+            if (asset == null) {
+                throw new IllegalArgumentException("Asset must be non-null");
+            }
+            ConnectionResult result =
+                    mGoogleApiClient.blockingConnect(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            if (!result.isSuccess()) {
+                return null;
+            }
+            // convert asset into a file descriptor and block until it's ready
+            InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
+                    mGoogleApiClient, asset).await().getInputStream();
+            mGoogleApiClient.disconnect();
+
+            if (assetInputStream == null) {
+                Log.w(LOG_TAG, "Requested an unknown Asset.");
+                return null;
+            }
+            // decode the stream into a bitmap
+            return BitmapFactory.decodeStream(assetInputStream);
+        }
+        public class GetBitmap extends AsyncTask<Asset, Void, Void> {
+
+            @Override
+            protected Void doInBackground(Asset... assets) {
+                Asset asset = assets[0];
+                mIcon = loadBitmapFromAsset(asset);
+                mIcon = Bitmap.createScaledBitmap(mIcon, 75, 75, false);
+                postInvalidate();
+
+                return null;
+            }
+        }
     }
-
-
 }

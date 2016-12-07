@@ -26,8 +26,8 @@ import android.preference.PreferenceManager;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -77,6 +77,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL/3;
     private static final long DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
     private static final int WEATHER_NOTIFICATION_ID = 3004;
+    private int mIcon;
 
 
     private static final String[] NOTIFY_WEATHER_PROJECTION = new String[] {
@@ -164,10 +165,10 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 
         Log.d(LOG_TAG, "high + low" + high + " " + low );
 
+        Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), Utility.getArtResourceForWeatherCondition(weatherId));
 
 
 //todo add weather icon
-//                    Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), iconId);
 
         String highTemp = high + makeWeatherUnique;
         String lowTemp = low + makeWeatherUnique;
@@ -176,7 +177,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 
         putDataMapRequest.getDataMap().putString("high-temp", highTemp);
         putDataMapRequest.getDataMap().putString("low-temp", lowTemp);
-//                    putDataMapRequestRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
+        putDataMapRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
 
         putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
 
@@ -184,7 +185,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         request.setUrgent();
 
         Log.d(LOG_TAG, "Attempt to send request with high = " + highTemp + " and low = " + lowTemp + " makeWeatherUnique = " + makeWeatherUnique );
-        Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {
+    Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {
             @Override
             public void onSuccess(DataApi.DataItemResult dataItemResult) {
                 Log.d(LOG_TAG, "DataItem sent successfully");
@@ -197,6 +198,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                 mGoogleApiClient.disconnect();
             }
         });
+
     }
 
 
@@ -552,6 +554,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                     int iconId = Utility.getIconResourceForWeatherCondition(weatherId);
                     Resources resources = context.getResources();
                     int artResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
+                    mIcon = artResourceId;
                     String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
 
 
@@ -575,9 +578,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
                                 .error(artResourceId)
                                 .fitCenter()
                                 .into(largeIconWidth, largeIconHeight).get();
+//                        mIcon = largeIcon;
                     } catch (InterruptedException | ExecutionException e) {
                         Log.e(LOG_TAG, "Error retrieving large icon from " + artUrl, e);
                         largeIcon = BitmapFactory.decodeResource(resources, artResourceId);
+//                        mIcon = largeIcon;
                     }
                     String title = context.getString(R.string.app_name);
 
