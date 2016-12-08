@@ -9,4 +9,5 @@
     <dimen name="digital_y_offset">90dp</dimen>
     <dimen name="digital_temp_high_offset">130dp</dimen>
     <dimen name="digital_temp_low_offset">160dp</dimen>
+    <dimen name="digital_bitmap_y_offset">160dp</dimen>
 </resources>

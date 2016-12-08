@@ -120,12 +120,13 @@ public class MyWatchFace extends CanvasWatchFaceService{
         Bitmap mIcon;
         Paint mIconPaint;
         Paint mTextPaint;
-        Paint mHighTempPaint;
-        Paint mLowTempPaint;
+        Paint mHighTemperaturePaint;
+        Paint mLowTemperaturePaint;
         boolean mAmbient;
         Calendar mCalendar;
-        float highTempYOffset;
-        float lowTempYOffset;
+        float highTemperatureYOffset;
+        float lowTemperatureYOffset;
+        float bitmapYOffset;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -151,7 +152,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
             @Override
             public void onDataChanged(DataEventBuffer dataEventBuffer) {
                 Log.d(LOG_TAG, "Data Changed");
-//                this number is removed from the weather data. In the following methods. It was added in order to make data
+//                makeWeatherUnique is removed from the weather data. In the following methods. It was added in order to make data
 //                unique so that it is sent by Wearable Api
 
                 for (DataEvent event : dataEventBuffer) {
@@ -267,17 +268,18 @@ public class MyWatchFace extends CanvasWatchFaceService{
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
-            mHighTempPaint = new Paint();
-            mHighTempPaint.setColor(resources.getColor(R.color.digital_text));
+            mHighTemperaturePaint = new Paint();
+            mHighTemperaturePaint.setColor(resources.getColor(R.color.digital_text));
 
-            mLowTempPaint = new Paint();
-            mLowTempPaint.setColor(resources.getColor(R.color.light_grey));
+            mLowTemperaturePaint = new Paint();
+            mLowTemperaturePaint.setColor(resources.getColor(R.color.light_grey));
 
 
             mCalendar = Calendar.getInstance();
 
-            highTempYOffset = getResources().getDimension(R.dimen.digital_temp_high_offset);
-            lowTempYOffset = getResources().getDimension(R.dimen.digital_temp_low_offset);
+            highTemperatureYOffset = getResources().getDimension(R.dimen.digital_temp_high_offset);
+            lowTemperatureYOffset = getResources().getDimension(R.dimen.digital_temp_low_offset);
+            bitmapYOffset = getResources().getDimension(R.dimen.digital_bitmap_y_offset);
 
             mResolvingError = false;
             mGoogleApiClient = new GoogleApiClient.Builder(getApplicationContext())
@@ -306,7 +308,6 @@ public class MyWatchFace extends CanvasWatchFaceService{
                     })
                     .build();
             mGoogleApiClient.connect();
-
 
         }
 
@@ -376,8 +377,8 @@ public class MyWatchFace extends CanvasWatchFaceService{
                     ? R.dimen.digital_temp_text_size_round : R.dimen.digital_temp_text_size);
 
             mTextPaint.setTextSize(textSize);
-            mHighTempPaint.setTextSize(tempTextSize);
-            mLowTempPaint.setTextSize(tempTextSize);
+            mHighTemperaturePaint.setTextSize(tempTextSize);
+            mLowTemperaturePaint.setTextSize(tempTextSize);
         }
 
         @Override
@@ -455,26 +456,30 @@ public class MyWatchFace extends CanvasWatchFaceService{
             float centerY = bounds.centerY();
 
             if (mHighTemp != null && mLowTemp != null) {
-                if (mIcon != null){// && !mLowBitAmbient){
+
+                if (mIcon != null){
+                //Temp icon
                     canvas.drawBitmap(mIcon,
-                           centerX - 100 ,// centerX - mIcon.getWidth() - mIcon.getWidth() / 4,
-                            lowTempYOffset - mIcon.getHeight(),
+                           centerX - 100 ,
+                            bitmapYOffset - mIcon.getHeight(),
                             mIconPaint);}
+
                 //High temp
                 canvas.drawText(mHighTemp,
                         centerX + 25,
-                        highTempYOffset,
-                        mHighTempPaint);
+                        highTemperatureYOffset,
+                        mHighTemperaturePaint);
+
                 //Low temp
                 canvas.drawText(mLowTemp,
-                        centerX + 25,//+ highTempSize + highTempRightMargin,
-                        lowTempYOffset,
-                        mLowTempPaint);
+                        centerX + 25,
+                        lowTemperatureYOffset,
+                        mLowTemperaturePaint);
             }
             else {
                 Log.d("mHighTemp = " + mHighTemp, "mLowTemp = " + mLowTemp + " time = " + mTime + " makeWeatherUnique " + makeWeatherUnique);
                 float tempYOffset = getResources().getDimension(R.dimen.digital_y_offset);
-                canvas.drawText(getString(R.string.No_temperature_data_string), 30, tempYOffset + 35, mHighTempPaint);
+                canvas.drawText(getString(R.string.No_temperature_data_string), 30, tempYOffset + 35, mHighTemperaturePaint);
             }
         }
 
@@ -544,6 +549,9 @@ public class MyWatchFace extends CanvasWatchFaceService{
             });
         }
 
+        /*
+        Credit to https://developer.android.com/training/wearables/data-layer/assets.html
+         */
         public Bitmap loadBitmapFromAsset(Asset asset) {
             final int TIMEOUT_MS = 500;
             if (asset == null) {
@@ -566,13 +574,17 @@ public class MyWatchFace extends CanvasWatchFaceService{
             // decode the stream into a bitmap
             return BitmapFactory.decodeStream(assetInputStream);
         }
+
+        /*
+        GetBitmap is run on an AsyncTask as the app crashes while trying to process bitmap on UI thread
+         */
         public class GetBitmap extends AsyncTask<Asset, Void, Void> {
 
             @Override
             protected Void doInBackground(Asset... assets) {
-                Asset asset = assets[0];
-                mIcon = loadBitmapFromAsset(asset);
+                mIcon = loadBitmapFromAsset(assets[0]);
                 mIcon = Bitmap.createScaledBitmap(mIcon, 75, 75, false);
+                //postInvalidate() re draws from non-ui thread
                 postInvalidate();
 
                 return null;

@@ -165,18 +165,18 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
 
 
         Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), Utility.getArtResourceForWeatherCondition(weatherId));
-        String highTemp = high + makeWeatherUnique;
-        String lowTemp = low + makeWeatherUnique;
+        String highTemperature = high + makeWeatherUnique;
+        String lowTemperature = low + makeWeatherUnique;
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watchface-temp-update");
         putDataMapRequest.getDataMap().putInt("makeWeatherUnique", makeWeatherUnique);
-        putDataMapRequest.getDataMap().putString("high-temp", highTemp);
-        putDataMapRequest.getDataMap().putString("low-temp", lowTemp);
+        putDataMapRequest.getDataMap().putString("high-temp", highTemperature);
+        putDataMapRequest.getDataMap().putString("low-temp", lowTemperature);
         putDataMapRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
         putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
         request.setUrgent();
 
-        Log.d(LOG_TAG, "Attempt to send request with high = " + highTemp + " and low = " + lowTemp + " makeWeatherUnique = " + makeWeatherUnique );
+        Log.d(LOG_TAG, "Attempt to send request with high = " + highTemperature + " and low = " + lowTemperature + " makeWeatherUnique = " + makeWeatherUnique );
     Wearable.DataApi.putDataItem(mGoogleApiClient, request).setResultCallback(new ResultCallbacks<DataApi.DataItemResult>() {
             @Override
             public void onSuccess(DataApi.DataItemResult dataItemResult) {

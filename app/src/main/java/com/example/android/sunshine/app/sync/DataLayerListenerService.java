@@ -99,10 +99,6 @@ public class DataLayerListenerService extends WearableListenerService {
 
             // Send the RPC
 
-//            Wearable.MessageApi.sendMessage(googleApiClient, nodeId,
-//                    DATA_ITEM_RECEIVED_PATH, payload);
-
-
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 String path = event.getDataItem().getUri().getPath();
                 Log.d(LOG_TAG, "path = " + path);
