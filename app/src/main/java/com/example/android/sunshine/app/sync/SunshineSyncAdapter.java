@@ -65,7 +65,8 @@ import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 /*
-        Code for data layer is from Google's Developer Documents
+        Credit to: https://developer.android.com/ for data layer code
+        Credit to: Udacity for Advanced Android Sample App Code
  */
 public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener

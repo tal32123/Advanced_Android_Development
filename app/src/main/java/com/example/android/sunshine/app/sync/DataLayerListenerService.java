@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Tal on 11/24/2016.
- * Credit to https://developer.android.com/training/wearables/data-layer/events.html#Listen
+ * Credit to: https://developer.android.com/training/wearables/data-layer/events.html#Listen for data listener code
  */
 public class DataLayerListenerService extends WearableListenerService {
 
