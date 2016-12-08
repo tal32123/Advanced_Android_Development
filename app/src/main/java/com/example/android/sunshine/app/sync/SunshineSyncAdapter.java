@@ -159,8 +159,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         String high = Utility.formatTemperature(getContext(), cursor.getDouble(INDEX_MAX_TEMP));
         String low = Utility.formatTemperature(getContext(), cursor.getDouble(INDEX_MIN_TEMP));
 
-//              makeWeatherUnique is added to the weather data in order to get unique values each time it is called.
-//              This value is subtracted in the myWatchFace class
+//      makeWeatherUnique is added to the weather data in order to get unique values each time it is called.
+//      This value is subtracted in the myWatchFace class
         Random random = new Random();
         int  makeWeatherUnique = random.nextInt(1000) + 1;
 
