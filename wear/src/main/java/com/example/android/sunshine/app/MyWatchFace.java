@@ -423,7 +423,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
                     break;
                 case TAP_TYPE_TAP:
                     // The user has completed the tap gesture.
-                    // TODO: Add code to handle the tap gesture.
+                    // this is where the watchface touch code is inserted
 
                     break;
             }
@@ -474,7 +474,7 @@ public class MyWatchFace extends CanvasWatchFaceService{
             else {
                 Log.d("mHighTemp = " + mHighTemp, "mLowTemp = " + mLowTemp + " time = " + mTime + " makeWeatherUnique " + makeWeatherUnique);
                 float tempYOffset = getResources().getDimension(R.dimen.digital_y_offset);
-                canvas.drawText("No temperature data", 30, tempYOffset + 35, mHighTempPaint);
+                canvas.drawText(getString(R.string.No_temperature_data_string), 30, tempYOffset + 35, mHighTempPaint);
             }
         }
 
