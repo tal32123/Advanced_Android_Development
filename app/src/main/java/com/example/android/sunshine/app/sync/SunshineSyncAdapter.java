@@ -64,7 +64,9 @@ import java.net.URL;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
-
+/*
+        Code for data layer is from Google's Developer Documents
+ */
 public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener
 {
@@ -137,14 +139,13 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(LOG_TAG, "Google API Client was connected");
-//                SunshineSyncAdapter.syncImmediately(getContext());
-//                sendDataToWatch();
-
     }
 
 
 
     private void sendDataToWatch(){
+        // sends data to watch using the Google data layer API
+
         Log.d(LOG_TAG, "called sendDataToWatch");
         String locationQuery = Utility.getPreferredLocation(getContext());
         Uri weatherUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationQuery, System.currentTimeMillis());
@@ -163,23 +164,15 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter
         int  makeWeatherUnique = random.nextInt(1000) + 1;
 
 
-        Log.d(LOG_TAG, "high + low" + high + " " + low );
-
         Bitmap iconBitmap = BitmapFactory.decodeResource(getContext().getResources(), Utility.getArtResourceForWeatherCondition(weatherId));
-
-
-
         String highTemp = high + makeWeatherUnique;
         String lowTemp = low + makeWeatherUnique;
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watchface-temp-update");
         putDataMapRequest.getDataMap().putInt("makeWeatherUnique", makeWeatherUnique);
-
         putDataMapRequest.getDataMap().putString("high-temp", highTemp);
         putDataMapRequest.getDataMap().putString("low-temp", lowTemp);
         putDataMapRequest.getDataMap().putAsset("icon", createAssetFromBitmap(iconBitmap));
-
         putDataMapRequest.getDataMap().putLong("time", System.currentTimeMillis());
-
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
         request.setUrgent();
 
