@@ -1,3 +1,6 @@
+Project Sunshine Watchface
+===================================
+
 This app showcases an Android Wear watchface that I have made. The watchface shows weather information gathered from the Advanced Android Sample App. To get started you must place your API Key for OpenWeatherMap inside the App's build.gradle file in the section marked "REMOVE THIS CODE AND INSERT YOUR API KEY".
 
 
@@ -6,7 +9,7 @@ The following information is for the Advanced Android Sample App:
 
 
 Advanced Android Sample App
-===================================
+--------------
 
 Synchronizes weather information from OpenWeatherMap on Android Phones and Tablets. Used in the Udacity Advanced Android course.
 
