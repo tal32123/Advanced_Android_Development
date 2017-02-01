@@ -1,11 +1,14 @@
-Project Sunshine Watchface
-===================================
+# Project Sunshine
+This is a weather app that sends data to an Android Wear watchface that I have made. I have made sure to make efficient usage of device processors and batteries. 
 
-This app showcases an Android Wear watchface that I have made. The watchface shows weather information gathered from the Advanced Android Sample App. To get started you must place your API Key for OpenWeatherMap inside the App's build.gradle file in the section marked "REMOVE THIS CODE AND INSERT YOUR API KEY".
+## Installation
+To get started you must place your API Key for OpenWeatherMap inside the App's `build.gradle` file in the section marked ` "\"REMOVE THIS CODE AND INSERT YOUR API KEY\""`
+ex. ` "\"123456\""`
 
+## Watchface Screenshot
 <img src="http://i.imgur.com/KMw1AEDl.png"/>
 
-The following information is for the Advanced Android Sample App:
+The following information is for the Advanced Android App:
 
 
 Advanced Android Sample App
